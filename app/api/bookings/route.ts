@@ -18,6 +18,7 @@ const bookingSchema = z.object({
   adults: z.coerce.number().min(1),
   children: z.coerce.number().min(0),
   total_amount: z.coerce.number().min(0),
+  notes: z.string().optional(),
   status: z.string().optional(),
   payment_status: z.string().optional(),
   source: z.string().optional()
