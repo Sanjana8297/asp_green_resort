@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 const roomPackages = [
-  { label: 'Single-bedroom', value: 'Single-bedroom', amount: 6000, minGuests: 4, maxGuests: 6, discountLabel: '20%' },
-  { label: 'Double-bedroom', value: 'Double-bedroom', amount: 10000, minGuests: 6, maxGuests: 10, discountLabel: '20%' },
-  { label: 'Triple-bedroom', value: 'Triple-bedroom', amount: 15000, minGuests: 10, maxGuests: 14, discountLabel: '30%' }
+  { label: 'Single-bedroom', value: 'Single-bedroom', amount: 6000, minGuests: 4, maxGuests: 6, discountLabel: '20%', discountPercent: 0.2 },
+  { label: 'Double-bedroom', value: 'Double-bedroom', amount: 10000, minGuests: 6, maxGuests: 10, discountLabel: '20%', discountPercent: 0.2 },
+  { label: 'Triple-bedroom', value: 'Triple-bedroom', amount: 15000, minGuests: 10, maxGuests: 14, discountLabel: '30%', discountPercent: 0.3 }
 ] as const;
 
 const bookingSchema = z.object({
@@ -76,6 +76,10 @@ function getNights(checkIn?: string, checkOut?: string) {
   return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function getDiscountedAmount(amount: number, discountPercent: number) {
+  return Math.round(amount * (1 - discountPercent));
+}
+
 function isAvailabilityError(message?: string | null) {
   if (!message) return false;
   const normalized = message.toLowerCase();
@@ -97,6 +101,8 @@ export function BookingForm() {
     check_in: string;
     check_out: string;
     nights: number;
+    ratePerNight: number;
+    discountLabel: string;
     totalAmount: number;
   } | null>(null);
 
@@ -116,6 +122,8 @@ export function BookingForm() {
       `Check-in: ${successDetails.check_in}`,
       `Check-out: ${successDetails.check_out}`,
       `Nights: ${successDetails.nights}`,
+      `Rate per night after discount: ₹${successDetails.ratePerNight.toLocaleString('en-IN')}`,
+      `Discount: ${successDetails.discountLabel}`,
       `Total cost: ₹${successDetails.totalAmount.toLocaleString('en-IN')}`,
       '',
       'Thank you for booking with us!'
@@ -150,16 +158,17 @@ export function BookingForm() {
   const roomAmount = form.watch('room_amount');
 
   const selectedPackage = roomOptions.find((room) => room.value === roomType) ?? roomOptions[0];
+  const discountedRate = selectedPackage ? getDiscountedAmount(selectedPackage.amount, selectedPackage.discountPercent) : 0;
   const nights = useMemo(() => getNights(checkIn, checkOut), [checkIn, checkOut]);
-  const totalAmount = useMemo(() => nights * (roomAmount || selectedPackage?.amount || 0), [nights, roomAmount, selectedPackage]);
+  const totalAmount = useMemo(() => nights * discountedRate, [nights, discountedRate]);
 
   useEffect(() => {
     if (!selectedPackage) return;
 
-    if (form.getValues('room_amount') !== selectedPackage.amount) {
-      form.setValue('room_amount', selectedPackage.amount, { shouldValidate: true, shouldDirty: true });
+    if (form.getValues('room_amount') !== discountedRate) {
+      form.setValue('room_amount', discountedRate, { shouldValidate: true, shouldDirty: true });
     }
-  }, [form, selectedPackage]);
+  }, [form, selectedPackage, discountedRate]);
 
   const guestError = form.formState.errors.adults || form.formState.errors.children;
   const totalGuests = (Number(form.watch('adults')) || 0) + (Number(form.watch('children')) || 0);
@@ -209,6 +218,8 @@ export function BookingForm() {
         check_in: values.check_in,
         check_out: values.check_out,
         nights: billNights,
+        ratePerNight: values.room_amount,
+        discountLabel: selectedPackage.discountLabel,
         totalAmount: billTotal
       });
       setShowSuccessDialog(true);
@@ -277,8 +288,8 @@ export function BookingForm() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-forest-700">Bill Summary</p>
           <div className="mt-3 grid gap-2 text-sm text-ink md:grid-cols-2">
             <p>Nights: {nights}</p>
-            <p>Rate per night: ₹{(selectedPackage?.amount ?? 0).toLocaleString('en-IN')}</p>
-            <p>Package: {selectedPackage?.label ?? 'N/A'}</p>
+            <p>Base rate: ₹{(selectedPackage?.amount ?? 0).toLocaleString('en-IN')}</p>
+            <p>Discounted rate: ₹{discountedRate.toLocaleString('en-IN')}</p>
             <p className="font-semibold text-forest-900">Total Bill: ₹{totalAmount.toLocaleString('en-IN')}</p>
           </div>
         </div>

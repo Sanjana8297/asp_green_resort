@@ -53,6 +53,7 @@ export default function DoubleBedroomPage() {
                   <li>Timings: 1:00pm to 11:30am</li>
                   <li>Food: separate cost</li>
                   <li>AC accommodation</li>
+                  <li>Swimming Pool access</li>
                 </ul>
               </div>
             </div>
