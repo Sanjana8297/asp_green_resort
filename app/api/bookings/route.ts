@@ -91,14 +91,33 @@ export async function POST(req: NextRequest) {
   const text = buildBookingNotificationText(bookingWithId as any);
   const html = buildBookingNotificationHtml(bookingWithId as any);
 
-  try {
-    await Promise.all([
-      sendBookingEmail(notificationEmail, 'New booking received', text, html),
-      sendBookingWhatsApp(notificationWhatsapp, text)
-    ]);
-  } catch (notificationError) {
-    const message = notificationError instanceof Error ? notificationError.message : 'Notification failed.';
-    return buildResponse(500, { success: false, error: `Booking saved but failed to send notifications: ${message}` });
+  const results = await Promise.allSettled([
+    sendBookingEmail(notificationEmail, 'New booking received', text, html),
+    sendBookingWhatsApp(notificationWhatsapp, text)
+  ]);
+
+  const emailResult = results[0];
+  const whatsappResult = results[1];
+
+  const errors: string[] = [];
+  if (emailResult.status === 'rejected') {
+    errors.push(`Email: ${emailResult.reason instanceof Error ? emailResult.reason.message : emailResult.reason}`);
+  } else if (emailResult.value === false) {
+    errors.push('Email: SMTP configuration missing or incomplete.');
+  }
+
+  if (whatsappResult.status === 'rejected') {
+    errors.push(`WhatsApp: ${whatsappResult.reason instanceof Error ? whatsappResult.reason.message : whatsappResult.reason}`);
+  } else if (whatsappResult.value === false) {
+    errors.push('WhatsApp: Twilio configuration missing or incomplete.');
+  }
+
+  if (errors.length > 0) {
+    return buildResponse(201, {
+      success: true,
+      id: data?.id ?? null,
+      warning: errors.join(' ')
+    });
   }
 
   return buildResponse(201, { success: true, id: data?.id ?? null });

@@ -11,13 +11,10 @@ const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioWhatsappFrom = process.env.TWILIO_WHATSAPP_FROM;
 
-const isTwilioConfigured = Boolean(twilioAccountSid && twilioAuthToken && twilioWhatsappFrom);
+export const isEmailConfigured = Boolean(smtpHost && smtpPort && smtpUser && smtpPass);
+export const isTwilioConfigured = Boolean(twilioAccountSid && twilioAuthToken && twilioWhatsappFrom);
 
 function createTransporter() {
-  if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
-    throw new Error('Missing SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.');
-  }
-
   return nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
@@ -34,8 +31,11 @@ function createTransporter() {
 }
 
 export async function sendBookingEmail(to: string, subject: string, text: string, html?: string, replyTo?: string) {
-  const transporter = createTransporter();
+  if (!isEmailConfigured) {
+    return false;
+  }
 
+  const transporter = createTransporter();
   await transporter.sendMail({
     from: emailFrom,
     to,
@@ -44,11 +44,12 @@ export async function sendBookingEmail(to: string, subject: string, text: string
     html,
     replyTo
   });
+  return true;
 }
 
 export async function sendBookingWhatsApp(to: string, body: string) {
   if (!isTwilioConfigured) {
-    return;
+    return false;
   }
 
   const client = twilio(twilioAccountSid as string, twilioAuthToken as string);
@@ -60,6 +61,7 @@ export async function sendBookingWhatsApp(to: string, body: string) {
     to: `whatsapp:${toPhone}`,
     body
   });
+  return true;
 }
 
 export function buildBookingNotificationText(values: {

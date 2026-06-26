@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 const roomPackages = [
-  { label: 'Single-bedroom', value: 'Single-bedroom', amount: 6000 },
-  { label: 'Double-bedroom', value: 'Double-bedroom', amount: 10000 },
-  { label: 'Triple-bedroom', value: 'Triple-bedroom', amount: 15000 }
+  { label: 'Single-bedroom', value: 'Single-bedroom', amount: 6000, minGuests: 4, maxGuests: 6, discountLabel: '20%' },
+  { label: 'Double-bedroom', value: 'Double-bedroom', amount: 10000, minGuests: 6, maxGuests: 10, discountLabel: '20%' },
+  { label: 'Triple-bedroom', value: 'Triple-bedroom', amount: 15000, minGuests: 10, maxGuests: 14, discountLabel: '30%' }
 ] as const;
 
 const bookingSchema = z.object({
@@ -31,6 +31,35 @@ const bookingSchema = z.object({
 }, {
   message: 'Check-out date must be after check-in date.',
   path: ['check_out']
+}).superRefine((values, ctx) => {
+  const selected = roomPackages.find((room) => room.value === values.room_type);
+
+  if (!selected) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Please select a valid room package.',
+      path: ['room_type']
+    });
+    return;
+  }
+
+  const totalGuests = values.adults + values.children;
+  if (Number.isNaN(totalGuests) || totalGuests <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Please enter valid guest counts.',
+      path: ['adults']
+    });
+    return;
+  }
+
+  if (totalGuests < selected.minGuests || totalGuests > selected.maxGuests) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Total guests must be between ${selected.minGuests} and ${selected.maxGuests} for this package.`,
+      path: ['adults']
+    });
+  }
 });
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
@@ -58,8 +87,52 @@ export function BookingForm() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] = useState('');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successDetails, setSuccessDetails] = useState<{
+    referenceId: string;
+    full_name: string;
+    phone: string;
+    email: string;
+    room_type: string;
+    check_in: string;
+    check_out: string;
+    nights: number;
+    totalAmount: number;
+  } | null>(null);
 
   const roomOptions = useMemo(() => roomPackages, []);
+
+  const handleDownloadReceipt = () => {
+    if (!successDetails) return;
+
+    const lines = [
+      'ASP Green Resort - Booking Receipt',
+      '================================',
+      `Reference ID: ${successDetails.referenceId}`,
+      `Guest Name: ${successDetails.full_name}`,
+      `Phone: ${successDetails.phone}`,
+      `Email: ${successDetails.email}`,
+      `Room type: ${successDetails.room_type}`,
+      `Check-in: ${successDetails.check_in}`,
+      `Check-out: ${successDetails.check_out}`,
+      `Nights: ${successDetails.nights}`,
+      `Total cost: ₹${successDetails.totalAmount.toLocaleString('en-IN')}`,
+      '',
+      'Thank you for booking with us!'
+    ];
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `booking-${successDetails.referenceId || 'receipt'}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    window.setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 0);
+  };
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
@@ -87,6 +160,10 @@ export function BookingForm() {
       form.setValue('room_amount', selectedPackage.amount, { shouldValidate: true, shouldDirty: true });
     }
   }, [form, selectedPackage]);
+
+  const guestError = form.formState.errors.adults || form.formState.errors.children;
+  const totalGuests = (Number(form.watch('adults')) || 0) + (Number(form.watch('children')) || 0);
+  const isGuestCountInvalid = selectedPackage && (totalGuests < selectedPackage.minGuests || totalGuests > selectedPackage.maxGuests);
 
   const onSubmit = async (values: BookingFormValues) => {
     setSuccessMessage('');
@@ -121,7 +198,20 @@ export function BookingForm() {
     }
 
     if (response.success) {
-      setSuccessMessage(response.id ? `Booking confirmed. Reference ID: ${response.id}. Bill Amount: ₹${billTotal.toLocaleString('en-IN')}` : `Booking submitted successfully. Bill Amount: ₹${billTotal.toLocaleString('en-IN')}`);
+      const title = response.id ? 'Booking confirmed' : 'Booking submitted successfully';
+      setSuccessMessage(`${title}. Reference ID: ${response.id ?? 'N/A'}. Bill Amount: ₹${billTotal.toLocaleString('en-IN')}`);
+      setSuccessDetails({
+        referenceId: response.id ?? 'N/A',
+        full_name: values.full_name,
+        phone: values.phone,
+        email: values.email,
+        room_type: values.room_type,
+        check_in: values.check_in,
+        check_out: values.check_out,
+        nights: billNights,
+        totalAmount: billTotal
+      });
+      setShowSuccessDialog(true);
       form.reset({
         full_name: '',
         phone: '',
@@ -155,7 +245,11 @@ export function BookingForm() {
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="room_type">Room</label>
           <select id="room_type" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('room_type')}>
-            {roomOptions.map((room) => <option key={room.value} value={room.value}>{`${room.label} {₹${room.amount.toLocaleString('en-IN')}}`}</option>)}
+            {roomOptions.map((room) => (
+              <option key={room.value} value={room.value}>
+                {`${room.label} - ₹${room.amount.toLocaleString('en-IN')} (+${room.discountLabel} discount)`}
+              </option>
+            ))}
           </select>
         </div>
         <div className="space-y-2">
@@ -174,6 +268,11 @@ export function BookingForm() {
           <label className="text-sm font-medium text-forest-800" htmlFor="children">Children</label>
           <input id="children" type="number" min="0" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('children')} />
         </div>
+        {isGuestCountInvalid ? (
+          <div className="md:col-span-2 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            Total guests must be between {selectedPackage?.minGuests} and {selectedPackage?.maxGuests} for the selected package.
+          </div>
+        ) : null}
         <div className="md:col-span-2 rounded-3xl border border-forest-100 bg-forest-50 p-4">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-forest-700">Bill Summary</p>
           <div className="mt-3 grid gap-2 text-sm text-ink md:grid-cols-2">
@@ -187,10 +286,32 @@ export function BookingForm() {
           <Button type="submit" disabled={loading} className="w-full md:w-auto">{loading ? 'Submitting...' : 'Reserve Now'}</Button>
         </div>
         {error && !isAvailabilityError(error) ? <p className="md:col-span-2 text-sm text-red-600">{error}</p> : null}
+        {guestError ? <p className="md:col-span-2 text-sm text-red-600">{guestError.message}</p> : null}
         {successMessage ? <p className="md:col-span-2 text-sm text-forest-700">{successMessage}</p> : null}
         {bookingId ? <p className="md:col-span-2 text-sm text-muted">Latest booking ID: {bookingId}</p> : null}
         </form>
       </Card>
+
+      {showSuccessDialog && successDetails ? (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="success-dialog-title">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-soft">
+            <h3 id="success-dialog-title" className="font-display text-2xl text-forest-900">Booking Confirmed</h3>
+            <div className="mt-4 rounded-3xl border border-forest-100 bg-forest-50 p-4 text-sm text-ink">
+              <p><strong>Reference ID:</strong> {successDetails.referenceId}</p>
+              <p><strong>Room:</strong> {successDetails.room_type}</p>
+              <p><strong>Check-in:</strong> {successDetails.check_in}</p>
+              <p><strong>Check-out:</strong> {successDetails.check_out}</p>
+              <p><strong>Nights:</strong> {successDetails.nights}</p>
+              <p><strong>Total cost:</strong> ₹{successDetails.totalAmount.toLocaleString('en-IN')}</p>
+            </div>
+            <div className="mt-4 text-sm text-forest-700">{successMessage}</div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" onClick={handleDownloadReceipt}>Download Receipt</Button>
+              <Button type="button" onClick={() => setShowSuccessDialog(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showAvailabilityDialog ? (
         <div className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="availability-dialog-title">
