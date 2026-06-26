@@ -89,7 +89,14 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return buildResponse(500, { success: false, error: error.message });
+    const msg = error.message ?? String(error);
+    if (msg.includes('Choose another date') || msg.includes('already booked')) {
+      return buildResponse(409, { success: false, error: msg });
+    }
+    if (msg.includes('Check-out date must be after')) {
+      return buildResponse(400, { success: false, error: msg });
+    }
+    return buildResponse(500, { success: false, error: msg });
   }
 
   const bookingWithId = {
