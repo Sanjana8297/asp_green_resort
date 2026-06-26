@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import Twilio from 'twilio';
+import twilio from 'twilio';
 
 const emailFrom = process.env.EMAIL_FROM ?? 'aspgreenresort@gmail.com';
 const smtpHost = process.env.SMTP_HOST;
@@ -51,7 +51,7 @@ export async function sendBookingWhatsApp(to: string, body: string) {
     return;
   }
 
-  const client = new Twilio(twilioAccountSid as string, twilioAuthToken as string);
+  const client = twilio(twilioAccountSid as string, twilioAuthToken as string);
   const toPhone = to.replace(/^whatsapp:/, '');
   const fromPhone = twilioWhatsappFrom!.replace(/^whatsapp:/, '');
 

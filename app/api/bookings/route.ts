@@ -23,7 +23,7 @@ const bookingSchema = z.object({
 });
 
 const notificationEmail = 'aspgreenresort@gmail.com';
-const notificationWhatsapp = '+918297010105';
+const notificationWhatsapp = '+916300115651';
 
 function buildResponse(status: number, body: Record<string, unknown>) {
   return NextResponse.json(body, { status });
