@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import type { GalleryImage } from '@/lib/types';
 
 export function useGallery(limit?: number) {
@@ -14,19 +13,25 @@ export function useGallery(limit?: number) {
 
     const loadImages = async () => {
       setLoading(true);
-      let query = supabase.from('gallery').select('*').order('created_at', { ascending: false });
-      if (limit) query = query.limit(limit);
-      const { data, error: supabaseError } = await query;
 
-      if (!active) return;
+      try {
+        const response = await fetch('/api/gallery-images');
+        if (!response.ok) {
+          throw new Error(`Unable to load gallery images: ${response.statusText}`);
+        }
 
-      if (supabaseError) {
-        setError(supabaseError.message);
-        setImages([]);
-      } else {
-        setImages((data as GalleryImage[]) ?? []);
+        const data = (await response.json()) as GalleryImage[];
+        if (!active) return;
+
+        const sortedImages = data.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        setImages(limit ? sortedImages.slice(0, limit) : sortedImages);
         setError(null);
+      } catch (fetchError: unknown) {
+        if (!active) return;
+        setError(fetchError instanceof Error ? fetchError.message : 'Unknown error fetching gallery images.');
+        setImages([]);
       }
+
       setLoading(false);
     };
 

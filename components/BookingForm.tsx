@@ -53,10 +53,10 @@ const bookingSchema = z.object({
     return;
   }
 
-  if (totalGuests < selected.minGuests || totalGuests > selected.maxGuests) {
+  if (totalGuests > selected.maxGuests) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Total guests must be between ${selected.minGuests} and ${selected.maxGuests} for this package.`,
+      message: `Total guests must not exceed ${selected.maxGuests} for this package.`,
       path: ['adults']
     });
   }
@@ -163,7 +163,7 @@ export function BookingForm() {
 
   const guestError = form.formState.errors.adults || form.formState.errors.children;
   const totalGuests = (Number(form.watch('adults')) || 0) + (Number(form.watch('children')) || 0);
-  const isGuestCountInvalid = selectedPackage && (totalGuests < selectedPackage.minGuests || totalGuests > selectedPackage.maxGuests);
+  const isGuestCountInvalid = selectedPackage && totalGuests > selectedPackage.maxGuests;
 
   const onSubmit = async (values: BookingFormValues) => {
     setSuccessMessage('');
@@ -304,7 +304,10 @@ export function BookingForm() {
               <p><strong>Nights:</strong> {successDetails.nights}</p>
               <p><strong>Total cost:</strong> ₹{successDetails.totalAmount.toLocaleString('en-IN')}</p>
             </div>
-            <div className="mt-4 text-sm text-forest-700">{successMessage}</div>
+            <div className="mt-4 text-sm text-forest-700">
+              {successMessage}
+              <p className="mt-3 font-bold">Our team will contact regarding the payment process. THANKYOU</p>
+            </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <Button type="button" onClick={handleDownloadReceipt}>Download Receipt</Button>
               <Button type="button" onClick={() => setShowSuccessDialog(false)}>Close</Button>
