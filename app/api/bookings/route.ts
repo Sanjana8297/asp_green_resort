@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   const conflictRoomTypes = booking.room_type === 'Triple-bedroom'
     ? ['Single-bedroom', 'Double-bedroom', 'Triple-bedroom']
-    : ['Triple-bedroom'];
+    : ['Triple-bedroom', booking.room_type];
 
   const { data: overlappingBookings, error: availabilityError } = await supabaseServiceRole
     .from('bookings')
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   if (overlappingBookings?.length) {
     const errorMessage = booking.room_type === 'Triple-bedroom'
       ? 'Choose another date because single or double bedroom packages are already booked for this date.'
-      : 'Choose another date because the triple bedroom package is already booked for this date.';
+      : 'Choose another date because this package is already booked for this date.';
     return buildResponse(409, { success: false, error: errorMessage });
   }
 

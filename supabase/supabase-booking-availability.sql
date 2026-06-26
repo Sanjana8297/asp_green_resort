@@ -55,9 +55,9 @@ begin
       where (new.id is null or b.id <> new.id)
         and b.status <> 'cancelled'
         and daterange(b.check_in, b.check_out, '[)') && daterange(new.check_in, new.check_out, '[)')
-        and b.room_type = 'Triple-bedroom'
+        and b.room_type in ('Triple-bedroom', new.room_type)
     ) then
-      raise exception 'Choose another date because the triple bedroom package is already booked for this date.';
+      raise exception 'Choose another date because this package is already booked for this date.';
     end if;
   end if;
 
@@ -103,13 +103,13 @@ begin
       and daterange(b.check_in, b.check_out, '[)') && daterange(p_check_in, p_check_out, '[)')
       and (
         (p_room_type = 'Triple-bedroom' and b.room_type in ('Single-bedroom','Double-bedroom','Triple-bedroom'))
-        or (p_room_type <> 'Triple-bedroom' and b.room_type = 'Triple-bedroom')
+        or (p_room_type <> 'Triple-bedroom' and b.room_type in ('Triple-bedroom', p_room_type))
       )
   ) then
     if p_room_type = 'Triple-bedroom' then
       raise exception 'Choose another date because single or double bedroom packages are already booked for this date.';
     else
-      raise exception 'Choose another date because the triple bedroom package is already booked for this date.';
+      raise exception 'Choose another date because this package is already booked for this date.';
     end if;
   end if;
 
