@@ -82,11 +82,25 @@ export async function POST(req: NextRequest) {
     source: booking.source ?? 'website'
   };
 
+  // Perform an atomic insert via DB function to avoid race conditions.
   const { data, error } = await supabaseServiceRole
-    .from('bookings')
-    .insert(insertPayload)
-    .select('id')
-    .single();
+    .rpc('create_booking_if_available', {
+      p_full_name: insertPayload.full_name,
+      p_phone: insertPayload.phone,
+      p_email: insertPayload.email,
+      p_room_type: insertPayload.room_type,
+      p_room_amount: insertPayload.room_amount,
+      p_check_in: insertPayload.check_in,
+      p_check_out: insertPayload.check_out,
+      p_nights: insertPayload.nights,
+      p_adults: insertPayload.adults,
+      p_children: insertPayload.children,
+      p_total_amount: insertPayload.total_amount,
+      p_payment_status: insertPayload.payment_status,
+      p_status: insertPayload.status,
+      p_source: insertPayload.source,
+      p_notes: insertPayload.notes ?? null
+    });
 
   if (error) {
     const msg = error.message ?? String(error);
@@ -99,9 +113,10 @@ export async function POST(req: NextRequest) {
     return buildResponse(500, { success: false, error: msg });
   }
 
+  const insertedId = Array.isArray(data) ? data[0] : data;
   const bookingWithId = {
     ...insertPayload,
-    id: data?.id ?? null
+    id: insertedId ?? null
   };
 
   const text = buildBookingNotificationText(bookingWithId as any);

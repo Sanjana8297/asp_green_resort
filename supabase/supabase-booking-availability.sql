@@ -70,3 +70,53 @@ create trigger bookings_validate_package_conflict
   for each row execute function public.bookings_validate_package_conflict();
 
 commit;
+
+-- Atomic insert function: inserts a booking only if no conflicting booking exists.
+create or replace function public.create_booking_if_available(
+  p_full_name text,
+  p_phone text,
+  p_email text,
+  p_room_type text,
+  p_room_amount numeric,
+  p_check_in date,
+  p_check_out date,
+  p_nights integer,
+  p_adults integer,
+  p_children integer,
+  p_total_amount numeric,
+  p_payment_status text default 'pending',
+  p_status text default 'pending',
+  p_source text default 'website',
+  p_notes text default null
+)
+returns uuid as $$
+declare
+  v_id uuid;
+begin
+  if p_check_out <= p_check_in then
+    raise exception 'Check-out date must be after check-in date.';
+  end if;
+
+  if exists (
+    select 1 from public.bookings b
+    where b.status <> 'cancelled'
+      and daterange(b.check_in, b.check_out, '[)') && daterange(p_check_in, p_check_out, '[)')
+      and (
+        (p_room_type = 'Triple-bedroom' and b.room_type in ('Single-bedroom','Double-bedroom','Triple-bedroom'))
+        or (p_room_type <> 'Triple-bedroom' and b.room_type = 'Triple-bedroom')
+      )
+  ) then
+    if p_room_type = 'Triple-bedroom' then
+      raise exception 'Choose another date because single or double bedroom packages are already booked for this date.';
+    else
+      raise exception 'Choose another date because the triple bedroom package is already booked for this date.';
+    end if;
+  end if;
+
+  insert into public.bookings(full_name, phone, email, room_type, room_amount, check_in, check_out, nights, adults, children, total_amount, payment_status, status, source, notes)
+  values (p_full_name, p_phone, p_email, p_room_type, p_room_amount, p_check_in, p_check_out, p_nights, p_adults, p_children, p_total_amount, p_payment_status, p_status, p_source, p_notes)
+  returning id into v_id;
+
+  return v_id;
+end;
+$$ language plpgsql security definer;
