@@ -141,3 +141,25 @@ export function buildBookingNotificationHtml(values: {
     </ul>
   `;
 }
+
+export function buildContactNotificationText(values: { name: string; phone: string; email: string; message: string }) {
+  return [
+    'New contact message received',
+    `Name: ${values.name}`,
+    `Phone: ${values.phone}`,
+    `Email: ${values.email}`,
+    `Message: ${values.message}`
+  ].join('\n');
+}
+
+export function buildContactNotificationHtml(values: { name: string; phone: string; email: string; message: string }) {
+  return `
+    <h1>New contact message received</h1>
+    <ul>
+      <li><strong>Name:</strong> ${values.name}</li>
+      <li><strong>Phone:</strong> ${values.phone}</li>
+      <li><strong>Email:</strong> ${values.email}</li>
+      <li><strong>Message:</strong> ${values.message}</li>
+    </ul>
+  `;
+}

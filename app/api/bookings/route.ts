@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseServiceRole } from '@/lib/supabase-server';
+import { SITE_CONFIG } from '@/lib/config';
 import { buildBookingNotificationHtml, buildBookingNotificationText, sendBookingEmail, sendBookingWhatsApp } from '@/lib/notifications';
 
 export const runtime = 'nodejs';
@@ -22,8 +23,8 @@ const bookingSchema = z.object({
   source: z.string().optional()
 });
 
-const notificationEmail = 'aspgreenresort@gmail.com';
-const notificationWhatsapp = '+916300115651';
+const notificationEmail = SITE_CONFIG.email;
+const notificationWhatsapp = `+${SITE_CONFIG.whatsappNumber}`;
 
 function buildResponse(status: number, body: Record<string, unknown>) {
   return NextResponse.json(body, { status });
