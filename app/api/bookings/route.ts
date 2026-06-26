@@ -51,10 +51,15 @@ export async function POST(req: NextRequest) {
     return buildResponse(400, { success: false, error: 'Check-out date must be after check-in date.' });
   }
 
+  const conflictRoomTypes = booking.room_type === 'Triple-bedroom'
+    ? ['Single-bedroom', 'Double-bedroom', 'Triple-bedroom']
+    : ['Triple-bedroom'];
+
   const { data: overlappingBookings, error: availabilityError } = await supabaseServiceRole
     .from('bookings')
     .select('id')
     .neq('status', 'cancelled')
+    .in('room_type', conflictRoomTypes)
     .lt('check_in', booking.check_out)
     .gt('check_out', booking.check_in)
     .limit(1);
@@ -64,7 +69,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (overlappingBookings?.length) {
-    return buildResponse(409, { success: false, error: 'Choose another date because the rooms are booked for this date.' });
+    const errorMessage = booking.room_type === 'Triple-bedroom'
+      ? 'Choose another date because single or double bedroom packages are already booked for this date.'
+      : 'Choose another date because the triple bedroom package is already booked for this date.';
+    return buildResponse(409, { success: false, error: errorMessage });
   }
 
   const insertPayload = {
