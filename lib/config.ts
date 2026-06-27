@@ -1,6 +1,6 @@
 export const SITE_CONFIG = {
   name: 'ASP Green Resort',
-  tagline: 'Your Tagline Here',
+  tagline: 'A calm, green escape just beyond the city.',
   phone: '+91 6300115651',
   email: 'aspgreenresort@gmail.com',
   address: '- Chevella Mondal, Rangareddy District., Opposite Pragathi Resorts, Kammeta Village, Shankarpalli, Rangareddy-501203, Telangana',
