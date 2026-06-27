@@ -17,22 +17,20 @@ export default function AboutPage() {
       </section>
 
       <section className="section-padding">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 md:grid-cols-2 md:px-6">
+        <div className="mx-auto max-w-3xl px-4 md:px-6">
           <div>
             <Badge>Our Story</Badge>
-            <h2 className="mt-4 font-display text-4xl text-forest-900">A farmhouse built for connection and calm</h2>
-            <p className="mt-6 leading-8 text-muted">This placeholder copy can be edited easily in the component or replaced with your final brand story. The goal is to communicate a premium, nature-first escape with flexible stays, family gatherings, and event-ready lawns.</p>
+            <h2 className="mt-4 font-display text-4xl text-forest-900">A green farmhouse retreat built for connection and calm</h2>
+            <p className="mt-6 leading-8 text-muted">
+              Tucked away in Kammeta Village near Shankarpalli, just opposite Pragathi Resorts, {SITE_CONFIG.name} is a
+              sprawling green escape made for people who want to slow down without going far from the city. With acres of
+              open lawns, fresh country air, and flexible single, double, and triple bedroom packages that comfortably
+              host groups of every size, it is the perfect setting for relaxed family weekends, milestone celebrations,
+              and get-togethers with friends. More than a place to stay, {SITE_CONFIG.name} is built around warm,
+              attentive hospitality and event-ready spaces, where our team handles every detail so your stay feels
+              effortless, personal, and worth coming back to.
+            </p>
           </div>
-          <Card>
-            <h3 className="font-display text-2xl text-forest-900">Management</h3>
-            <div className="mt-6 flex items-center gap-4">
-              <img src="" alt="Management" className="h-20 w-20 rounded-full bg-forest-50" />
-              <div>
-                <p className="font-semibold text-ink">Resort Management</p>
-                <p className="text-sm text-muted">Dedicated hospitality leadership</p>
-              </div>
-            </div>
-          </Card>
         </div>
       </section>
 
