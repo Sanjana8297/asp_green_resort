@@ -17,7 +17,7 @@ create table if not exists public.bookings (
   full_name text not null,
   phone text not null,
   email text not null,
-  room_type text not null check (room_type in ('Single-bedroom', 'Double-bedroom', 'Triple-bedroom')),
+  room_type text not null check (room_type in ('Single-bedroom', 'Double-bedroom', 'Triple-bedroom', 'Wedding/Events/Celebrations')),
   room_amount numeric not null,
   check_in date not null,
   check_out date not null,

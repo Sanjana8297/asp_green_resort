@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils';
 const roomOptions = [
   { label: 'Family Package (Single Bedroom)', href: '/rooms/single-bedroom' },
   { label: 'Family Extended Package (Double Bedroom)', href: '/rooms/double-bedroom' },
-  { label: 'Combo Package (Triple Package)', href: '/rooms/triple-bedroom' }
+  { label: 'Combo Package (Triple Package)', href: '/rooms/triple-bedroom' },
+  { label: 'Wedding/Events/Celebrations', href: '/rooms/wedding-events' }
 ];
 
 export function Navbar() {

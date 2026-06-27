@@ -38,6 +38,16 @@ const packageSlides = [
     href: '/rooms/triple-bedroom',
     badge: 'Combo Package',
     highlights: ['10 to 14 members', '₹15,000', '30% discount', 'Food separate cost']
+  },
+  {
+    id: 'wedding-events',
+    label: 'Wedding/Events/Celebrations',
+    title: 'Wedding / Events',
+    description: 'Host grand weddings, events, and celebrations for 100 to 150 guests with the entire venue, food, rooms, and amenities included.',
+    image: '/photos/gallery/otdoor_way_2.jpeg',
+    href: '/rooms/wedding-events',
+    badge: 'Events Package',
+    highlights: ['100 to 150 guests', '₹1,500 per head', 'Food included', 'Pool & parking access']
   }
 ] as const;
 

@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 const roomPackages = [
-  { label: 'Single-bedroom', value: 'Single-bedroom', amount: 6000, minGuests: 4, maxGuests: 6, discountLabel: '20%', discountPercent: 0.2 },
-  { label: 'Double-bedroom', value: 'Double-bedroom', amount: 10000, minGuests: 6, maxGuests: 10, discountLabel: '20%', discountPercent: 0.2 },
-  { label: 'Triple-bedroom', value: 'Triple-bedroom', amount: 15000, minGuests: 10, maxGuests: 14, discountLabel: '30%', discountPercent: 0.3 }
+  { label: 'Single-bedroom', value: 'Single-bedroom', amount: 6000, minGuests: 4, maxGuests: 6, discountLabel: '20%', discountPercent: 0.2, perHead: false },
+  { label: 'Double-bedroom', value: 'Double-bedroom', amount: 10000, minGuests: 6, maxGuests: 10, discountLabel: '20%', discountPercent: 0.2, perHead: false },
+  { label: 'Triple-bedroom', value: 'Triple-bedroom', amount: 15000, minGuests: 10, maxGuests: 14, discountLabel: '30%', discountPercent: 0.3, perHead: false },
+  { label: 'Wedding/Events/Celebrations', value: 'Wedding/Events/Celebrations', amount: 1500, minGuests: 100, maxGuests: 150, discountLabel: '0%', discountPercent: 0, perHead: true }
 ] as const;
 
 const bookingSchema = z.object({
@@ -104,6 +105,8 @@ export function BookingForm() {
     ratePerNight: number;
     discountLabel: string;
     totalAmount: number;
+    perHead: boolean;
+    guests: number;
   } | null>(null);
 
   const roomOptions = useMemo(() => roomPackages, []);
@@ -121,9 +124,16 @@ export function BookingForm() {
       `Room type: ${successDetails.room_type}`,
       `Check-in: ${successDetails.check_in}`,
       `Check-out: ${successDetails.check_out}`,
-      `Nights: ${successDetails.nights}`,
-      `Rate per night after discount: ₹${successDetails.ratePerNight.toLocaleString('en-IN')}`,
-      `Discount: ${successDetails.discountLabel}`,
+      ...(successDetails.perHead
+        ? [
+            `Guests: ${successDetails.guests}`,
+            `Rate per head: ₹${successDetails.ratePerNight.toLocaleString('en-IN')}`
+          ]
+        : [
+            `Nights: ${successDetails.nights}`,
+            `Rate per night after discount: ₹${successDetails.ratePerNight.toLocaleString('en-IN')}`,
+            `Discount: ${successDetails.discountLabel}`
+          ]),
       `Total cost: ₹${successDetails.totalAmount.toLocaleString('en-IN')}`,
       '',
       'Thank you for booking with us!'
@@ -160,7 +170,12 @@ export function BookingForm() {
   const selectedPackage = roomOptions.find((room) => room.value === roomType) ?? roomOptions[0];
   const discountedRate = selectedPackage ? getDiscountedAmount(selectedPackage.amount, selectedPackage.discountPercent) : 0;
   const nights = useMemo(() => getNights(checkIn, checkOut), [checkIn, checkOut]);
-  const totalAmount = useMemo(() => nights * discountedRate, [nights, discountedRate]);
+  const isPerHead = selectedPackage?.perHead ?? false;
+  const totalGuests = (Number(form.watch('adults')) || 0) + (Number(form.watch('children')) || 0);
+  const totalAmount = useMemo(
+    () => (isPerHead ? totalGuests * discountedRate : nights * discountedRate),
+    [isPerHead, totalGuests, nights, discountedRate]
+  );
 
   useEffect(() => {
     if (!selectedPackage) return;
@@ -171,7 +186,6 @@ export function BookingForm() {
   }, [form, selectedPackage, discountedRate]);
 
   const guestError = form.formState.errors.adults || form.formState.errors.children;
-  const totalGuests = (Number(form.watch('adults')) || 0) + (Number(form.watch('children')) || 0);
   const isGuestCountInvalid = selectedPackage && totalGuests > selectedPackage.maxGuests;
 
   const onSubmit = async (values: BookingFormValues) => {
@@ -179,7 +193,8 @@ export function BookingForm() {
     setShowAvailabilityDialog(false);
     setAvailabilityMessage('');
     const billNights = getNights(values.check_in, values.check_out);
-    const billTotal = billNights * values.room_amount;
+    const billGuests = (Number(values.adults) || 0) + (Number(values.children) || 0);
+    const billTotal = selectedPackage?.perHead ? billGuests * values.room_amount : billNights * values.room_amount;
     const response = await createBooking({
       full_name: values.full_name,
       phone: values.phone,
@@ -220,7 +235,9 @@ export function BookingForm() {
         nights: billNights,
         ratePerNight: values.room_amount,
         discountLabel: selectedPackage.discountLabel,
-        totalAmount: billTotal
+        totalAmount: billTotal,
+        perHead: selectedPackage?.perHead ?? false,
+        guests: billGuests
       });
       setShowSuccessDialog(true);
       form.reset({
@@ -258,7 +275,9 @@ export function BookingForm() {
           <select id="room_type" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" {...form.register('room_type')}>
             {roomOptions.map((room) => (
               <option key={room.value} value={room.value}>
-                {`${room.label} - ₹${room.amount.toLocaleString('en-IN')} (+${room.discountLabel} discount)`}
+                {room.perHead
+                  ? `${room.label} - ₹${room.amount.toLocaleString('en-IN')} per head`
+                  : `${room.label} - ₹${room.amount.toLocaleString('en-IN')} (+${room.discountLabel} discount)`}
               </option>
             ))}
           </select>
@@ -287,9 +306,18 @@ export function BookingForm() {
         <div className="md:col-span-2 rounded-3xl border border-forest-100 bg-forest-50 p-4">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-forest-700">Bill Summary</p>
           <div className="mt-3 grid gap-2 text-sm text-ink md:grid-cols-2">
-            <p>Nights: {nights}</p>
-            <p>Base rate: ₹{(selectedPackage?.amount ?? 0).toLocaleString('en-IN')}</p>
-            <p>Discounted rate: ₹{discountedRate.toLocaleString('en-IN')}</p>
+            {isPerHead ? (
+              <>
+                <p>Guests: {totalGuests}</p>
+                <p>Rate per head: ₹{(selectedPackage?.amount ?? 0).toLocaleString('en-IN')}</p>
+              </>
+            ) : (
+              <>
+                <p>Nights: {nights}</p>
+                <p>Base rate: ₹{(selectedPackage?.amount ?? 0).toLocaleString('en-IN')}</p>
+                <p>Discounted rate: ₹{discountedRate.toLocaleString('en-IN')}</p>
+              </>
+            )}
             <p className="font-semibold text-forest-900">Total Bill: ₹{totalAmount.toLocaleString('en-IN')}</p>
           </div>
         </div>
@@ -312,7 +340,11 @@ export function BookingForm() {
               <p><strong>Room:</strong> {successDetails.room_type}</p>
               <p><strong>Check-in:</strong> {successDetails.check_in}</p>
               <p><strong>Check-out:</strong> {successDetails.check_out}</p>
-              <p><strong>Nights:</strong> {successDetails.nights}</p>
+              {successDetails.perHead ? (
+                <p><strong>Guests:</strong> {successDetails.guests}</p>
+              ) : (
+                <p><strong>Nights:</strong> {successDetails.nights}</p>
+              )}
               <p><strong>Total cost:</strong> ₹{successDetails.totalAmount.toLocaleString('en-IN')}</p>
             </div>
             <div className="mt-4 text-sm text-forest-700">

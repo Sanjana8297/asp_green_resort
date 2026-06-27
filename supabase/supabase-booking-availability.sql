@@ -28,6 +28,14 @@ alter table if exists public.bookings
 alter table if exists public.bookings
   drop constraint if exists bookings_no_date_overlap;
 
+-- Allow the Wedding/Events/Celebrations package as a valid room type.
+alter table if exists public.bookings
+  drop constraint if exists bookings_room_type_check;
+
+alter table if exists public.bookings
+  add constraint bookings_room_type_check
+  check (room_type in ('Single-bedroom', 'Double-bedroom', 'Triple-bedroom', 'Wedding/Events/Celebrations'));
+
 create or replace function public.bookings_validate_package_conflict()
 returns trigger as $$
 begin
@@ -39,15 +47,15 @@ begin
     raise exception 'Check-out date must be after check-in date.';
   end if;
 
-  if (new.room_type = 'Triple-bedroom') then
+  -- Triple-bedroom and Wedding/Events/Celebrations are whole-venue bookings: they conflict with any other active booking.
+  if (new.room_type in ('Triple-bedroom', 'Wedding/Events/Celebrations')) then
     if exists (
       select 1 from public.bookings b
       where (new.id is null or b.id <> new.id)
         and b.status <> 'cancelled'
         and daterange(b.check_in, b.check_out, '[)') && daterange(new.check_in, new.check_out, '[)')
-        and b.room_type in ('Single-bedroom', 'Double-bedroom', 'Triple-bedroom')
     ) then
-      raise exception 'Choose another date because single or double bedroom packages are already booked for this date.';
+      raise exception 'Choose another date because the venue is already booked for this date.';
     end if;
   else
     if exists (
@@ -55,7 +63,7 @@ begin
       where (new.id is null or b.id <> new.id)
         and b.status <> 'cancelled'
         and daterange(b.check_in, b.check_out, '[)') && daterange(new.check_in, new.check_out, '[)')
-        and b.room_type in ('Triple-bedroom', new.room_type)
+        and b.room_type in ('Triple-bedroom', 'Wedding/Events/Celebrations', new.room_type)
     ) then
       raise exception 'Choose another date because this package is already booked for this date.';
     end if;
@@ -102,12 +110,13 @@ begin
     where b.status <> 'cancelled'
       and daterange(b.check_in, b.check_out, '[)') && daterange(p_check_in, p_check_out, '[)')
       and (
-        (p_room_type = 'Triple-bedroom' and b.room_type in ('Single-bedroom','Double-bedroom','Triple-bedroom'))
-        or (p_room_type <> 'Triple-bedroom' and b.room_type in ('Triple-bedroom', p_room_type))
+        p_room_type in ('Triple-bedroom', 'Wedding/Events/Celebrations')
+        or b.room_type in ('Triple-bedroom', 'Wedding/Events/Celebrations')
+        or b.room_type = p_room_type
       )
   ) then
-    if p_room_type = 'Triple-bedroom' then
-      raise exception 'Choose another date because single or double bedroom packages are already booked for this date.';
+    if p_room_type in ('Triple-bedroom', 'Wedding/Events/Celebrations') then
+      raise exception 'Choose another date because the venue is already booked for this date.';
     else
       raise exception 'Choose another date because this package is already booked for this date.';
     end if;
