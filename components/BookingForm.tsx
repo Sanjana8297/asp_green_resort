@@ -243,19 +243,19 @@ export function BookingForm() {
         <form className="grid gap-4 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="full_name">Full Name</label>
-          <input id="full_name" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" placeholder="Enter your full name" {...form.register('full_name')} />
+          <input id="full_name" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" placeholder="Enter your full name" {...form.register('full_name')} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="phone">Phone Number</label>
-          <input id="phone" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" placeholder="Enter your phone number" {...form.register('phone')} />
+          <input id="phone" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" placeholder="Enter your phone number" {...form.register('phone')} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="email">Email</label>
-          <input id="email" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" placeholder="Enter your email" {...form.register('email')} />
+          <input id="email" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" placeholder="Enter your email" {...form.register('email')} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="room_type">Room</label>
-          <select id="room_type" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('room_type')}>
+          <select id="room_type" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" {...form.register('room_type')}>
             {roomOptions.map((room) => (
               <option key={room.value} value={room.value}>
                 {`${room.label} - ₹${room.amount.toLocaleString('en-IN')} (+${room.discountLabel} discount)`}
@@ -265,19 +265,19 @@ export function BookingForm() {
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="check_in">Check In Date</label>
-          <input id="check_in" type="date" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('check_in')} />
+          <input id="check_in" type="date" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" {...form.register('check_in')} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="check_out">Check Out Date</label>
-          <input id="check_out" type="date" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('check_out')} />
+          <input id="check_out" type="date" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" {...form.register('check_out')} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="adults">Adults</label>
-          <input id="adults" type="number" min="1" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('adults')} />
+          <input id="adults" type="number" min="1" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" {...form.register('adults')} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-forest-800" htmlFor="children">Children</label>
-          <input id="children" type="number" min="0" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3" {...form.register('children')} />
+          <input id="children" type="number" min="0" className="w-full rounded-2xl border border-forest-100 bg-white px-4 py-3 text-ink placeholder:text-muted" {...form.register('children')} />
         </div>
         {isGuestCountInvalid ? (
           <div className="md:col-span-2 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
