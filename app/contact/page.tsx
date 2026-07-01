@@ -78,15 +78,25 @@ export default function ContactPage() {
                 <p>{SITE_CONFIG.email}</p>
               </div>
             </Card>
-            <Card>
+            <Card className="overflow-hidden p-0">
               <iframe
-                title="Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3802.3496801027246!2d78.28843907430558!3d17.331444082824276!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb8c7f52be3e69%3A0xdda1fd4d0755f235!2sPragathi%20Resorts!5e0!3m2!1sen!2sin!4v1700000000000"
-                className="h-72 w-full rounded-2xl border-0"
+                title="ASP Green Resort location"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(SITE_CONFIG.location)}&hl=en&z=15&output=embed`}
+                className="h-72 w-full border-0"
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
+              <div className="border-t border-forest-100 px-4 py-3">
+                <a
+                  href={SITE_CONFIG.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-forest-700 hover:text-forest-900"
+                >
+                  Open in Google Maps
+                </a>
+              </div>
             </Card>
           </div>
         </div>

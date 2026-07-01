@@ -35,12 +35,11 @@ export default function AboutPage() {
       </section>
 
       <section className="section-padding bg-white/70">
-        <div className="mx-auto grid max-w-7xl gap-4 px-4 md:grid-cols-4 md:px-6">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 md:grid-cols-3 md:px-6">
           {[
-            ['10+', 'Years'],
+            ['5+', 'Years'],
             ['5k+', 'Happy Guests'],
-            ['20+', 'Acres'],
-            ['15+', 'Activities']
+            ['1', 'Acre']
           ].map(([value, label]) => (
             <Card key={label} className="text-center">
               <p className="font-display text-4xl text-forest-700">{value}</p>
